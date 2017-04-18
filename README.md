@@ -1,2 +1,2 @@
 # hxmlinstall
-HxmlInstall: Git hosted haxe library made easy
+HxmlInstall: Git hosted haxe libraries made easy

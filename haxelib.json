@@ -1,0 +1,11 @@
+{
+        "name": "hxmlinstall",
+        "url" : "https://github.com/modjke/hxmlinstall",
+        "license": "MIT",
+        "tags": ["haxe", "haxelib", "hxml", "lib", "utility", "install"],
+        "description": "Git hosted haxe libraries made easy",
+        "version": "0.0.1",
+        "releasenote": "",
+		"classPath": "src",
+        "contributors": ["modjke"]
+}

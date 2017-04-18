@@ -1,0 +1,3 @@
+-cp src
+-main hxml.install.HxmlInstall
+-neko run.n
