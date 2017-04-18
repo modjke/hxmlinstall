@@ -40,8 +40,11 @@ class Haxelib
 	}
 	
 	public static function installLib(name:String, version:String)
-	{
-		EzProcess.execute('haxelib install $name $version --always');
+	{		
+		var error = ~/Error: (.+)/g;
+		var hasError = error.match(EzProcess.execute('haxelib install $name $version --always', true));
+		if (hasError)		
+			throw 'Error while installing lib: ${error.matched(1)}';	
 	}
 	
 	public static function getLibPath(name:String, version:String):String
@@ -64,7 +67,10 @@ class Haxelib
 	
 	public static function installGitLib(name:String, url:String)
 	{
-		EzProcess.execute('haxelib git $name $url');
+		var error = ~/Error: (.+)/g;
+		var hasError = error.match(EzProcess.execute('haxelib git $name $url --always', true));
+		if (hasError)		
+			throw 'Error while installing git lib: ${error.matched(1)}';		
 	}
 		
 	

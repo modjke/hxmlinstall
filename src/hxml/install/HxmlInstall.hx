@@ -4,7 +4,6 @@ using Lambda;
 
 import haxe.ds.StringMap;
 import haxe.io.Path;
-import haxe.macro.Context;
 import hxml.install.Hxml.HxmlLib;
 import sys.FileSystem;
 import sys.io.File;
@@ -90,7 +89,7 @@ class HxmlInstall
 					{
 						var checkedOutCommit = git.getCheckedoutCommit();
 						Sys.println('Last checked out commit: $checkedOutCommit');
-						if (git.getCheckedoutCommit() != branchOrCommit)
+						if (checkedOutCommit != branchOrCommit)
 						{
 							Sys.println('Last commit should be: $branchOrCommit, fetching/checking out...');
 							git.fetch();

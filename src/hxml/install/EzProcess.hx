@@ -5,7 +5,7 @@ import sys.io.Process;
 class EzProcess
 {
 
-	public static function execute(cmd:String, ?writeStdin:String):String
+	public static function execute(cmd:String, ?writeStdin:String, log = false):String
 	{
 		var args = cmd.split(" ");
 		var command = args.shift();
@@ -17,8 +17,12 @@ class EzProcess
 		var all = process.stdout.readAll().toString();
 		process.close();
 		
-		//Sys.println('Running: $cmd');
-		//Sys.println(all);
+		if (log)
+		{
+			Sys.println('Running: $cmd');
+			Sys.print(all);
+		}
+		
 		
 		return all;
 	}
