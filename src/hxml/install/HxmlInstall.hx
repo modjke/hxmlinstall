@@ -1,5 +1,6 @@
 package hxml.install;
 
+
 using Lambda;
 
 import haxe.ds.StringMap;
@@ -12,6 +13,7 @@ import sys.io.File;
 class HxmlInstall
 {
 
+
 	public static function main()
 	{	
 		var args = Sys.args();
@@ -22,24 +24,49 @@ class HxmlInstall
 		Sys.println('Current working dir: ${Sys.getCwd()}');
 		install();
 	}
+
+	#if macro
+	public static function warnIfOutdated()
+	{
+		#if display
+		return;
+		#end
+		
+		
+		var libs = collectLibs();
+		for (l in libs)
+		{
+			switch (l.kind)
+			{
+				case HAXELIB(ver):	//do nothing
+				case GIT(url, commit):					
+					var libVer = Haxelib.getLibVersion(l.name);
+					if (libVer == "git")
+					{
+						if (commit != null)
+						{
+							var libPath = Haxelib.getLibPath(l.name, "git");
+							var git = new Git(libPath);
+							var checkedoutCommit = git.getCheckedoutCommit();
+							if (checkedoutCommit != commit)
+								haxe.macro.Context.warning('Library ${l.name} is outdated, run haxelib run hxmlinstall', l.position);
+							git.close();
+						} else 
+							haxe.macro.Context.warning('Library ${l.name} has no commit or tag set', l.position);
+					} else 
+						haxe.macro.Context.warning('Library ${l.name} current version is not git (${libVer})', l.position);
+			}
+		}
+	}
+	#end
 	
 	public static function install()
 	{
-		var hxmls = resolveHxmlPaths();
-		
-		var libs:StringMap<HxmlLib> = new StringMap();
-		
-		for (hxml in hxmls)
-		{
-			var hxmlData = File.getContent(hxml);
-			for (lib in Hxml.getLibs(hxmlData))
-			{
-				if (libs.exists(lib.name)) throw 'Duplicate lib declaration: ${lib.name}';
+		#if display
+		return;
+		#end
 				
-				libs.set(lib.name, lib);
-			}
-		}
-		
+		var libs = collectLibs();
 		for (lib in libs)
 		{
 			Sys.println('Processing lib: ${lib.name}...');
@@ -59,7 +86,7 @@ class HxmlInstall
 						Sys.println('No version specified, skipped');
 					}
 					
-				case GIT(url, branchOrCommit):
+				case GIT(url, commit):
 					var currentLibVersion = Haxelib.getLibVersion(lib.name);
 					Sys.println('Current lib version is $currentLibVersion');
 					if (currentLibVersion != "git")
@@ -82,33 +109,60 @@ class HxmlInstall
 							throw 'Lib ${lib.name} installed with different origin ($url) and working directory is not clean';
 					}
 					
-					if (branchOrCommit == null)
-						throw 'For git lib ${lib.name} either a branch name or commit should be specified';
+					if (commit == null)
+						throw 'For git lib ${lib.name} either a tag or commit should be specified';
 						
-					if (branchOrCommit.commit)
+					
+					var checkedOutCommit = git.getCheckedoutCommit();
+					Sys.println('Last checked out commit: $checkedOutCommit');
+					if (checkedOutCommit != commit)
 					{
-						var checkedOutCommit = git.getCheckedoutCommit();
-						Sys.println('Last checked out commit: $checkedOutCommit');
-						if (checkedOutCommit != branchOrCommit)
-						{
-							Sys.println('Last commit should be: $branchOrCommit, fetching/checking out...');
-							git.fetch();
-							git.checkout(branchOrCommit);
-						}
-							
-					} else if (branchOrCommit.branch) {
-						Sys.println('Fetching / checking out lastest changed for branch: $branchOrCommit');
-						git.fetch();
-						git.checkout(branchOrCommit);
+						Sys.println('Last commit should be: $commit, fetching/checking out...');
 						
-					} else 
-						throw 'Unexpected: $branchOrCommit';
+						if (!git.isWorkDirClean())
+						{
+							Sys.println("Work directory $path is not clean");
+							Sys.exit(1);
+						}
+						
+						git.fetch();
+						git.checkout(commit);
+						
+						checkedOutCommit = git.getCheckedoutCommit();
+						if (checkedOutCommit != commit)
+						{							
+							Sys.println('Failed to checkout $commit');
+							Sys.exit(1);
+						}
+					}
+				
+					
 					
 					git.close();
 					
 			}		
 		}
 		
+	}
+	
+	static function collectLibs():StringMap<HxmlLib>
+	{
+		var hxmls = resolveHxmlPaths();
+		
+		var libs:StringMap<HxmlLib> = new StringMap();
+		
+		for (hxml in hxmls)
+		{			
+			for (lib in Hxml.getLibs(hxml))
+			{
+				if (libs.exists(lib.name)) throw 'Duplicate lib declaration: ${lib.name}';
+				
+				libs.set(lib.name, lib);
+			}
+		}
+		
+		
+		return libs;
 	}
 	
 	static function resolveHxmlPaths()
@@ -119,4 +173,6 @@ class HxmlInstall
 			.map(function (name) return Path.join([workDir, name]));
 			
 	}
+	
+
 }

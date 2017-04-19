@@ -1,49 +1,85 @@
 package hxml.install;
-import haxe.macro.Context;
+
+import sys.io.File;
 
 using StringTools;
+
+typedef Position = 
+	#if macro
+	haxe.macro.Expr.Position;
+	#else
+	{};
+	#end
+	
 
 class Hxml
 {
 
-	public static function getLibs(hxmlData:String):Array<HxmlLib>
+	public static function getLibs(hxml:String):Array<HxmlLib>
 	{
-		var lines = hxmlData.split("\n")
-			.map(StringTools.trim)
-			.filter(function (s) return s.length > 0);
+		var hxmlData = File.getContent(hxml);
+		
+		var splitted = hxmlData.split("\n");
+		var min = 0;
+		var max = 0;
+		var lines = [];
+		
+		
+		for (l in splitted) {			
+			max = min + l.length;
+			lines.push({
+				line: l.trim(),
+				min: min,
+				max: max
+			});
+			min = max + 1;
+		}
+			
+		
+			
 			
 		var libs:Array<HxmlLib> = [];
 		
 		var i = lines.length;
 		while (i-- > 0)
 		{
-			var line = lines[i];
+			var l = lines[i];
+			var line = l.line;
 			var index = line.indexOf(" ");
+			
+			var pos = 
+				#if macro
+				haxe.macro.Context.makePosition({min:l.min, max:l.max, file:hxml});
+				#else
+				null;
+				#end
+		
+				
 			if (index > -1)
 			{
 				var arg = line.substr(0, index);				
 				if (arg == "-lib")
 				{
 					var value = line.substr(index + 1).split(":");
-					var lib = value[0];
+					var lib = value[0];					
 					var version = value.length > 1 ? value[1] : null;
 					
 					//previous line
-					var prev = i > 0 ? lines[i - 1] : null;
+					var prev = i > 0 ? lines[i - 1].line : null;
 					if (prev != null && prev.startsWith("#git")) {
 						value = prev.split(" ");
 						var gitUrl = value.length > 1 ? value[1] : null;						
 						if (gitUrl == null)
 							throw 'Expected git url for lin: $lib';
 							
-						var branchOrCommit = value.length > 2 ? value[2] : null;
+						var commit = value.length > 2 ? value[2] : null;
 						
-						if (version != null)
-							Context.fatalError('Version specified for lib: $lib', Context.currentPos());
+						if (version != null && version != "git")
+							throw 'Version specified for lib: $lib';
 						
-						libs.push(new HxmlLib(lib, GIT(gitUrl, branchOrCommit)));
+						libs.push(new HxmlLib(lib, GIT(gitUrl, commit), pos));
 					} else {
-						libs.push(new HxmlLib(lib, HAXELIB(version)));
+						libs.push(new HxmlLib(lib, HAXELIB(version), pos));
 					}
 				}
 			}
@@ -57,28 +93,21 @@ class Hxml
 enum HxmlLibKind
 {
 	HAXELIB(?version:String);
-	GIT(url:String, ?branchOrCommit:BranchOrCommit);
+	GIT(url:String, commit:String);
 }
 
-abstract BranchOrCommit(String) from String to String
-{
-	
-	public var branch(get, never):Bool;
-	inline function get_branch() return !commit;
-	public var commit(get, never):Bool;
-	inline function get_commit() return ~/([a-f,0-9]{40})/.match(this.toLowerCase());
-	
-}
 
 class HxmlLib
 {
 	public var name(default, null):String;
 	public var kind(default, null):HxmlLibKind;
-	
-	public function new(name:String, kind:HxmlLibKind)
+	public var position(default, null):Position;
+
+	public function new(name:String, kind:HxmlLibKind, position:Position)
 	{
 		this.name = name;
 		this.kind = kind;
+		this.position = position;
 	}
 }
 
