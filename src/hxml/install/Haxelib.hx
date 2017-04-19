@@ -26,9 +26,10 @@ class Haxelib
 	public static function setLibVersion(name:String, version:String)
 	{
 		/* haxelib will ignore version set in .current if .dev is preset, we should rename it */
-		var dotdev = Path.join(getLibPath(name), ".dev");
+		var dotdev = Path.join([getLibPath(name), ".dev"]);
 		if (FileSystem.exists(dotdev))
 		{
+			Sys.println('Development version is set for lib: $name: .dev will be renamed to .dev.bpk');
 			var dotdevbkp = Path.withExtension(dotdev, "dev.bkp");
 			FileSystem.rename(dotdev, dotdevbkp);
 		}
