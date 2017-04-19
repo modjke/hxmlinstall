@@ -23,7 +23,7 @@ class Git
 	
 	public function isWorkDirClean():Bool
 	{
-		var r = ~/nothing to commit, working directory clean/;		
+		var r = ~/nothing to commit, working (directory|tree) clean/;		
 		return r.match(EzProcess.execute('git status'));
 	}
 	

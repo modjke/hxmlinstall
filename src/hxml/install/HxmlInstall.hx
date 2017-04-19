@@ -121,7 +121,7 @@ class HxmlInstall
 						
 						if (!git.isWorkDirClean())
 						{
-							Sys.println("Work directory $path is not clean");
+							Sys.println('Work directory $path is not clean');
 							Sys.exit(1);
 						}
 						
