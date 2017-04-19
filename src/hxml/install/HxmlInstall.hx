@@ -93,6 +93,7 @@ class HxmlInstall
 					{
 						Sys.println('Installing library from git: $url');
 						Haxelib.installGitLib(lib.name, url);
+						Haxelib.setLibVersion(lib.name, "git");
 					}
 						
 					var path = Haxelib.getLibPath(lib.name, "git");

@@ -25,6 +25,14 @@ class Haxelib
 	
 	public static function setLibVersion(name:String, version:String)
 	{
+		/* haxelib will ignore version set in .current if .dev is preset, we should rename it */
+		var dotdev = Path.join(getLibPath(name), ".dev");
+		if (FileSystem.exists(dotdev))
+		{
+			var dotdevbkp = Path.withExtension(dotdev, "dev.bkp");
+			FileSystem.rename(dotdev, dotdevbkp);
+		}
+		
 		EzProcess.execute('haxelib set $name $version --always');
 	}
 	
@@ -42,19 +50,27 @@ class Haxelib
 	public static function installLib(name:String, version:String)
 	{		
 		var error = ~/Error: (.+)/g;
-		var hasError = error.match(EzProcess.execute('haxelib install $name $version --always', true));
+		var hasError = error.match(EzProcess.execute('haxelib install $name $version --always'));
 		if (hasError)		
 			throw 'Error while installing lib: ${error.matched(1)}';	
 	}
 	
-	public static function getLibPath(name:String, version:String):String
+	/**
+	 * If version is not supplied when root dir (with version folders) is returned
+	 * @param	name
+	 * @param	version
+	 * @return
+	 */
+	public static function getLibPath(name:String, ?version:String):String
 	{
 		var r = ~/\((.+)\)/;
 		if (!r.match(EzProcess.execute('haxelib setup', '\n')))
 			throw 'Can\'t match haxelib path';
 		var hlPath = r.matched(1);
 		
-		var p = Path.join([hlPath, name, version.replace(".", ",")]);
+		var parts = [hlPath, name];
+		if (version != null) parts.push(version.replace(".", ","));
+		var p = Path.join(parts);
 		
 		if (!FileSystem.exists(p))
 			throw 'Does not exist: $p';
@@ -70,7 +86,7 @@ class Haxelib
 		var error = ~/Error: (.+)/g;
 		var hasError = error.match(EzProcess.execute('haxelib git $name $url --always', true));
 		if (hasError)		
-			throw 'Error while installing git lib: ${error.matched(1)}';		
+			throw 'Error while installing git lib: ${error.matched(1)}';				
 	}
 		
 	
