@@ -82,7 +82,7 @@ class HxmlInstall
 	}
 	
 	//converts HxmlPosition to haxe.macro.Expr.Position
-	inline static function libPos(p:HxmlPosition):haxe.macro.Expr.Position return { file: p.file, min: p.libMin, max: p.libMax }
+	inline static function libPos(p:HxmlPosition) return haxe.macro.Context.makePosition({ file: p.file, min: p.libMin, max: p.libMax });
 	#end
 	
 	public static function upref(?lib:String)
