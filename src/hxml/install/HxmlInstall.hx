@@ -6,6 +6,7 @@ using Lambda;
 import haxe.ds.StringMap;
 import haxe.io.Path;
 import hxml.install.Hxml.HxmlLib;
+import hxml.install.Hxml.HxmlPosition;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -17,13 +18,34 @@ class HxmlInstall
 	public static function main()
 	{	
 		var args = Sys.args();
-		if (args.length > 0)
-			Sys.setCwd(args[0]);
+
+		//consume the last argument (set by haxelib run) if it is a path and set it as a current working dir
+		if (args.length > 0) 
+		{			
 			
-		Sys.println('Running hxml install...');				
-		Sys.println('Current working dir: ${Sys.getCwd()}');
-		install();
+			if (~/[a-z,A-Z]:(?:\\|\/)/.match(args[args.length - 1]))			
+				Sys.setCwd(args.pop());
+		}
+		
+		inline function getArgAt(index:Int):Null<String> return args.length > index ? args[index] : null;
+			
+		var command:String = getArgAt(0);
+		if (command == null) command = "install";
+			
+		Sys.println('Running hxmlinstall');				
+		Sys.println('Current working dir is ${Sys.getCwd()}');
+		switch (command)
+		{
+			case "install": 
+				install();
+			case "upref": 
+				upref(getArgAt(1));
+			case _: 
+				Sys.println('Invalid argument: $command');
+		}		
 	}
+	
+	
 
 	#if macro
 	public static function warnIfOutdated()
@@ -49,23 +71,79 @@ class HxmlInstall
 							var git = new Git(libPath);
 							var checkedoutCommit = git.getCheckedoutCommit();
 							if (checkedoutCommit != commit)
-								haxe.macro.Context.warning('Library ${l.name} is outdated, run haxelib run hxmlinstall', l.position);
+								haxe.macro.Context.warning('Library ${l.name} is outdated, run haxelib run hxmlinstall', libPos(l.position));
 							git.close();
 						} else 
-							haxe.macro.Context.warning('Library ${l.name} has no commit or tag set', l.position);
+							haxe.macro.Context.warning('Library ${l.name} has no commit or tag set', libPos(l.position));
 					} else 
-						haxe.macro.Context.warning('Library ${l.name} current version is not git (${libVer})', l.position);
+						haxe.macro.Context.warning('Library ${l.name} current version is not git (${libVer})', libPos(l.position));
 			}
 		}
 	}
+	
+	//converts HxmlPosition to haxe.macro.Expr.Position
+	inline static function libPos(p:HxmlPosition):haxe.macro.Expr.Position return { file: p.file, min: p.libMin, max: p.libMax }
 	#end
 	
-	public static function install()
+	public static function upref(?lib:String)
 	{
-		#if display
-		return;
-		#end
-				
+		var libs = collectLibs();
+		if (lib != null) 		
+		{
+			if (libs.exists(lib))
+				libs = [lib => libs.get(lib)]
+			else 
+			{
+				Sys.println('Lib $lib is not referenced in any hxmls');
+				return;
+			}
+		}
+		
+		for (l in libs)
+		{
+			
+			switch (l.kind)
+			{
+				case GIT(url, commit):
+					Sys.println('Processing ${l.name}');
+					makeSureThisIsAGitLib(l.name, url);
+					var git = new Git(Haxelib.getLibPath(l.name, "git"));
+					var checkedOut = git.getCheckedoutCommit();
+					var fetchUrl = git.getFetchOrigin();
+					if (checkedOut != commit ||
+						fetchUrl != url)
+					{						
+						Sys.println('Updating git reference for ${l.name}');
+						Hxml.updateGitRef(l.position.file, l.name, fetchUrl, checkedOut);
+						
+						if (fetchUrl != url)
+							Sys.println('Updated origin from $url to $fetchUrl');
+							
+						if (checkedOut != commit)
+							Sys.println('Updated from $commit to $checkedOut');
+							
+					} else {
+						Sys.println('Up to date');
+					}
+				case _:
+			}
+		}
+	}
+	
+	static function makeSureThisIsAGitLib(lib:String, url:String)
+	{
+		var currentLibVersion = Haxelib.getLibVersion(lib);
+		//Sys.println('Current $lib version is $currentLibVersion');
+		if (currentLibVersion != "git")
+		{
+			Sys.println('Installing library from git: $url');
+			Haxelib.installGitLib(lib, url);
+			Haxelib.setLibVersion(lib, "git");
+		}				
+	}
+	
+	public static function install()
+	{		
 		var libs = collectLibs();
 		for (lib in libs)
 		{
@@ -87,15 +165,7 @@ class HxmlInstall
 					}
 					
 				case GIT(url, commit):
-					var currentLibVersion = Haxelib.getLibVersion(lib.name);
-					Sys.println('Current lib version is $currentLibVersion');
-					if (currentLibVersion != "git")
-					{
-						Sys.println('Installing library from git: $url');
-						Haxelib.installGitLib(lib.name, url);
-						Haxelib.setLibVersion(lib.name, "git");
-					}
-						
+					makeSureThisIsAGitLib(lib.name, url);
 					var path = Haxelib.getLibPath(lib.name, "git");
 					var git = new Git(path);
 					

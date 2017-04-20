@@ -4,16 +4,46 @@ import sys.io.File;
 
 using StringTools;
 
-typedef Position = 
-	#if macro
-	haxe.macro.Expr.Position;
-	#else
-	{};
-	#end
-	
-
 class Hxml
 {
+	
+	public static function updateGitRef(hxml:String, lib:String, gitUrl:String, commit:String)
+	{
+		var content = File.getContent(hxml);
+		var lines = content.split("\n");
+		
+		var updated = false;
+		for (i in 0...lines.length)
+		{
+			var line = lines[i];
+			var r = ~/-lib ([\S]+):git/;
+			if (r.match(line))
+			{
+				var libName = r.matched(1);
+				if (libName == lib)
+				{
+					if (i > 0)
+					{
+						var r = ~/#git (\S+) (\S+)/;						
+						var prev = lines[i - 1];	
+						if (r.match(prev))
+						{							
+							var newRef = '#git $gitUrl $commit';
+							lines[i - 1] = r.replace(prev, newRef);
+							
+							updated = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		if (updated)
+			File.saveContent(hxml, lines.join("\n"));
+		else 
+			throw 'Failed to find&update $lib @ $hxml';
+	}
 
 	public static function getLibs(hxml:String):Array<HxmlLib>
 	{
@@ -35,26 +65,29 @@ class Hxml
 			min = max + 1;
 		}
 			
-		
-			
-			
+
 		var libs:Array<HxmlLib> = [];
 		
-		var i = lines.length;
-		while (i-- > 0)
+		var prevMin = 0;
+		var prevMax = 0;
+		
+		for (i in 0...lines.length)
 		{
 			var l = lines[i];
 			var line = l.line;
 			var index = line.indexOf(" ");
 			
-			var pos = 
-				#if macro
-				haxe.macro.Context.makePosition({min:l.min, max:l.max, file:hxml});
-				#else
-				null;
-				#end
-		
-				
+			var pos = {
+				file: hxml,
+				libMin: l.min,
+				libMax: l.max,
+				metaMin: prevMin,
+				metaMax: prevMax
+			};
+			
+			prevMin = l.min;
+			prevMax = l.max;
+			
 			if (index > -1)
 			{
 				var arg = line.substr(0, index);				
@@ -84,6 +117,8 @@ class Hxml
 				}
 			}
 			
+			
+			
 		}
 		return libs;
 	}
@@ -96,14 +131,21 @@ enum HxmlLibKind
 	GIT(url:String, commit:String);
 }
 
+typedef HxmlPosition = {
+	file:String,
+	metaMin:Int,
+	metaMax:Int,
+	libMin:Int,
+	libMax:Int
+}
 
 class HxmlLib
 {
 	public var name(default, null):String;
 	public var kind(default, null):HxmlLibKind;
-	public var position(default, null):Position;
+	public var position(default, null):HxmlPosition;
 
-	public function new(name:String, kind:HxmlLibKind, position:Position)
+	public function new(name:String, kind:HxmlLibKind, position:HxmlPosition)
 	{
 		this.name = name;
 		this.kind = kind;
