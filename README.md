@@ -3,14 +3,23 @@ hxmlinstall: git hosted haxe libraries made easy
 
 ### Story goes first
 New project! You've got your favourite libs all set up via hxml file.
+
 You start developing your brand new haxe application.
+
 And when suddenly most usefull lib in your hxml is buggy.
+
 First you search lib.haxe.org for updates or alternative, no luck there.
+
 Next you check github.com/maitainer/usefulllib - nothing.
+
 There is no stopping you at that point - you fork it!
+
 You've located the bug, you've eliminated it, you've commited the fix.
+
 There it is, the greatest pull request of your life, waiting to be merged 
+
 (and published to lib.haxe.org as a new version), but you need to move forward.
+
 Your project depends on the forked version of the lib you've just fixed.
 
 # how to use
