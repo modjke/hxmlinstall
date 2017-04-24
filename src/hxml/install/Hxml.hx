@@ -103,7 +103,7 @@ class Hxml
 						value = prev.split(" ");
 						var gitUrl = value.length > 1 ? value[1] : null;						
 						if (gitUrl == null)
-							throw 'Expected git url for lin: $lib';
+							throw 'Expected git url for lib: $lib';
 							
 						var commit = value.length > 2 ? value[2] : null;
 						

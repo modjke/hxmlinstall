@@ -23,8 +23,11 @@ class HxmlInstall
 		if (args.length > 0) 
 		{			
 			
-			if (~/[a-z,A-Z]:(?:\\|\/)/.match(args[args.length - 1]))			
-				Sys.setCwd(args.pop());
+			if (~/[a-z,A-Z]:(?:\\|\/)/.match(args[args.length - 1]))	
+			{
+				var dir = args.pop();
+				Sys.setCwd(dir);
+			}
 		}
 		
 		inline function getArgAt(index:Int):Null<String> return args.length > index ? args[index] : null;
