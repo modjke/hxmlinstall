@@ -171,8 +171,8 @@ class HxmlInstall
 					makeSureThisIsAGitLib(lib.name, url);
 					var path = Haxelib.getLibPath(lib.name, "git");
 					var git = new Git(path);
-					
-					var fetchOrigin = git.getFetchOrigin();
+										
+					var fetchOrigin = git.initialized() ? git.getFetchOrigin() : null;
 					Sys.println('Fetch origin is: $fetchOrigin');
 					if (fetchOrigin != url)											
 					{

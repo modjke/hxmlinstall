@@ -11,6 +11,13 @@ class Git
 		prevWorkDir = Sys.getCwd();
 		Sys.setCwd(dir);
 	}
+	
+	public function initialized():Bool
+	{
+
+		var r = ~/On branch/;
+		return r.match(EzProcess.execute("git status"));
+	}
 
 	public function getFetchOrigin():String
 	{

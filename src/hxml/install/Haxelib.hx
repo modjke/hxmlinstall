@@ -74,7 +74,7 @@ class Haxelib
 		var p = Path.join(parts);
 		
 		if (!FileSystem.exists(p))
-			throw 'Does not exist: $p';
+			FileSystem.createDirectory(p);
 			
 		if (!FileSystem.isDirectory(p))
 			throw 'Not a directory: $p';
