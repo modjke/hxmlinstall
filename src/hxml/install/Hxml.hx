@@ -19,12 +19,13 @@ class Hxml
 			var r = ~/-lib ([\S]+):git/;
 			if (r.match(line))
 			{
+				
 				var libName = r.matched(1);
 				if (libName == lib)
-				{
+				{					
 					if (i > 0)
-					{
-						var r = ~/#git (\S+) (\S+)/;						
+					{						
+						var r = ~/#git (\S+)\s?(\S*)/;						
 						var prev = lines[i - 1];	
 						if (r.match(prev))
 						{							
@@ -143,7 +144,7 @@ class HxmlLib
 {
 	public var name(default, null):String;
 	public var kind(default, null):HxmlLibKind;
-	public var position(default, null):HxmlPosition;
+	public var position(default, null):HxmlPosition;	
 
 	public function new(name:String, kind:HxmlLibKind, position:HxmlPosition)
 	{

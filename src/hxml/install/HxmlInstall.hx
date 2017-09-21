@@ -5,11 +5,12 @@ using Lambda;
 
 import haxe.ds.StringMap;
 import haxe.io.Path;
+import haxe.macro.Compiler;
 import hxml.install.Hxml.HxmlLib;
 import hxml.install.Hxml.HxmlPosition;
 import sys.FileSystem;
 import sys.io.File;
-
+using StringTools;
 
 class HxmlInstall
 {
@@ -42,7 +43,16 @@ class HxmlInstall
 			case "install": 
 				install();
 			case "upref": 
-				upref(getArgAt(1));
+				
+				var lib = getArgAt(1);
+				var hxml = getArgAt(2);
+				if (lib != null && lib.endsWith(".hxml"))
+				{
+					lib = getArgAt(2);
+					hxml = getArgAt(1);
+				}
+				
+				upref(hxml, lib);
 			case _: 
 				Sys.println('Invalid argument: $command');
 		}		
@@ -57,8 +67,8 @@ class HxmlInstall
 		return;
 		#end
 		
-		
-		var libs = collectLibs();
+	
+		var libs = collectLibs(resolveHxmlPaths(Sys.getCwd()));
 		for (l in libs)
 		{
 			switch (l.kind)
@@ -88,13 +98,23 @@ class HxmlInstall
 	inline static function libPos(p:HxmlPosition) return haxe.macro.Context.makePosition({ file: p.file, min: p.libMin, max: p.libMax });
 	#end
 	
-	public static function upref(?lib:String)
+	public static function upref(?hxml:String, ?lib:String)
 	{
-		var libs = collectLibs();
+		var workDir = Sys.getCwd();		
+		var hxmls = resolveHxmlPaths(workDir, hxml);
+		
+		if (hxmls.length > 1)
+		{
+			Sys.println("Too many hxmls to process, specify hxml to process 'hxminstall upref [hxml]'");
+			return;
+		}
+		
+		var libs = collectLibs(hxmls);
 		if (lib != null) 		
 		{
-			if (libs.exists(lib))
-				libs = [lib => libs.get(lib)]
+			var l = libByName(libs, lib);
+			if (l != null)
+				libs = [l];
 			else 
 			{
 				Sys.println('Lib $lib is not referenced in any hxmls');
@@ -133,6 +153,11 @@ class HxmlInstall
 		}
 	}
 	
+	static function libByName(libs:Array<HxmlLib>, lib:String):HxmlLib
+	{
+		return libs.find(function (l) return l.name == lib);
+	}
+	
 	static function makeSureThisIsAGitLib(lib:String, url:String)
 	{
 		var currentLibVersion = Haxelib.getLibVersion(lib);
@@ -146,8 +171,11 @@ class HxmlInstall
 	}
 	
 	public static function install()
-	{		
-		var libs = collectLibs();
+	{
+		var workDir = Sys.getCwd();		
+		var hxmls = resolveHxmlPaths(workDir);
+
+		var libs = collectLibs(hxmls);
 		for (lib in libs)
 		{
 			Sys.println('Processing lib: ${lib.name}...');
@@ -219,19 +247,21 @@ class HxmlInstall
 		
 	}
 	
-	static function collectLibs():StringMap<HxmlLib>
+	static function collectLibs(hxmls:Array<String>):Array<HxmlLib>
 	{
-		var hxmls = resolveHxmlPaths();
 		
-		var libs:StringMap<HxmlLib> = new StringMap();
+		
+		var libs:Array<HxmlLib> = [];
 		
 		for (hxml in hxmls)
 		{			
 			for (lib in Hxml.getLibs(hxml))
 			{
-				if (libs.exists(lib.name)) throw 'Duplicate lib declaration: ${lib.name}';
-				
-				libs.set(lib.name, lib);
+				for (l in libs)
+					if (l.name == lib.name && l.position.file == lib.position.file)					
+						throw 'Duplicate lib definition ${lib.name} @ ${lib.position.file}';					
+					
+				libs.push(lib);
 			}
 		}
 		
@@ -239,12 +269,15 @@ class HxmlInstall
 		return libs;
 	}
 	
-	static function resolveHxmlPaths()
+	static function resolveHxmlPaths(dir:String, ?hxml:String):Array<String>
 	{		
-		var workDir = Sys.getCwd();
-		return FileSystem.readDirectory(workDir)
-			.filter(function (name) return Path.extension(name) == "hxml")
-			.map(function (name) return Path.join([workDir, name]));
+
+		if (hxml != null)
+			return [Path.join([dir, hxml])];
+		else 
+			return FileSystem.readDirectory(dir)
+				.filter(function (name) return Path.extension(name) == "hxml")
+				.map(function (name) return Path.join([dir, name]));
 			
 	}
 	
