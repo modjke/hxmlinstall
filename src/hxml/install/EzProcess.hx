@@ -5,11 +5,9 @@ import sys.io.Process;
 class EzProcess
 {
 
-	public static function execute(cmd:String, ?writeStdin:String, log = false):String
+	public static function execute(cmd:String, ?writeStdin:String = null, log = false):String
 	{
-		var args = cmd.split(" ");
-		var command = args.shift();
-		var process = new Process(command, args);		
+		var process = new Process(cmd);			
 		
 		if (writeStdin != null)
 			process.stdin.writeString(writeStdin);

@@ -1,6 +1,7 @@
 package hxml.install;
 import haxe.io.Path;
 import sys.FileSystem;
+import sys.io.Process;
 
 using StringTools;
 
@@ -85,7 +86,7 @@ class Haxelib
 	public static function installGitLib(name:String, url:String)
 	{
 		var error = ~/Error: (.+)/g;
-		var hasError = error.match(EzProcess.execute('haxelib git $name $url --always', true));
+		var hasError = error.match(EzProcess.execute('haxelib git $name "$url" --always', true));
 		if (hasError)		
 			throw 'Error while installing git lib: ${error.matched(1)}';				
 	}
