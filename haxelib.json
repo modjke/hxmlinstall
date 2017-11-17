@@ -4,8 +4,8 @@
         "license": "MIT",
         "tags": ["haxe", "haxelib", "hxml", "lib", "utility", "install"],
         "description": "Git hosted haxe libraries made easy",
-        "version": "0.0.6",
-        "releasenote": "fixed: upref not updating libs without hash specified",
+        "version": "0.0.7",
+        "releasenote": "fixed: haxelib list failed to retrieve libs sometimes",
 		"classPath": "src",
         "contributors": ["modjke"]
 }
